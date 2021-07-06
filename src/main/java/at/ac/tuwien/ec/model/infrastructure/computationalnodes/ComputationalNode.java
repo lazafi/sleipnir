@@ -96,7 +96,8 @@ public abstract class ComputationalNode extends NetworkedNode implements Seriali
 		double est = 0.0;
 		if(this.isCompatible(sc))
 			return est;
-		else if(allocated.isEmpty())
+		else
+			if(allocated.isEmpty())
 			return Double.MAX_VALUE;
 		else
 		{

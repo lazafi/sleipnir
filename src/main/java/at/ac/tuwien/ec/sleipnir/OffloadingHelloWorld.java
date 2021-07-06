@@ -16,6 +16,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 
+import lazafi.dic2021.exc3.R1Research;
+import lazafi.dic2021.exc3.R2Research;
+import lazafi.dic2021.exc3.RandomOffloadScheduler;
 import org.apache.commons.lang.math.RandomUtils;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -205,8 +208,10 @@ public class OffloadingHelloWorld {
 								new ArrayList<Tuple2<OffloadScheduling,Tuple5<Integer,Double,Double,Double,Double>>>();
 						OffloadScheduler singleSearch;
 						
-						singleSearch = new HEFTResearch(inputValues);
-						
+						//singleSearch = new HEFTResearch(inputValues);
+						//singleSearch = new RandomOffloadScheduler(inputValues);
+						singleSearch = new R2Research(inputValues);
+
 						ArrayList<OffloadScheduling> offloads = (ArrayList<OffloadScheduling>) singleSearch.findScheduling();
 						if(offloads != null)
 							for(OffloadScheduling os : offloads) 

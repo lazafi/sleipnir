@@ -5,7 +5,7 @@
 	"cloudonly":"false"
 	"appNum":"20"
 	"eta":"1.0"
-	"iter":"100"
+	"iter":"5"
 	"mobility":"true"
 	"navigatorMapSize":"10"
 	"antivirusFileSize":"50"

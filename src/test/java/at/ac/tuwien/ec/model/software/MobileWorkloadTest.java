@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
 
+import lazafi.dic2021.exc3.R1Research;
 import org.junit.jupiter.api.Test;
 
 import at.ac.tuwien.ec.model.software.mobileapps.AntivirusApp;
@@ -156,5 +157,20 @@ class MobileWorkloadTest {
 		}
 		
 	}
+
+	@Test
+	void testscRank() {
+		MobileApplication fbApp = new FacebookApp(0,"mobile_0");
+		ArrayList<MobileSoftwareComponent> mscCmp = new ArrayList<MobileSoftwareComponent>();
+		ArrayList<ComponentLink> edges = new ArrayList<ComponentLink>();
+
+		mscCmp.addAll(fbApp.taskDependencies.vertexSet());
+
+		for (MobileSoftwareComponent msc: mscCmp) {
+			System.out.println(R1Research.scRank(msc, fbApp.getTaskDependencies()));
+		}
+	}
+
+
 
 }

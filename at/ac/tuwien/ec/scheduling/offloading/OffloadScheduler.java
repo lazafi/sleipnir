@@ -21,7 +21,7 @@ import at.ac.tuwien.ec.scheduling.offloading.OffloadScheduling;
 import at.ac.tuwien.ec.scheduling.simulation.SimIteration;
 
 
-public abstract class OffloadScheduler extends SimIteration implements Serializable{
+public abstract class OffloadScheduler extends SimIteration implements Serializable {
 	
 		
 	/**
