@@ -220,7 +220,7 @@ public class OffloadingHelloWorld {
 						//singleSearch = new ETFResearch_EdgeOnly(inputValues);
 
 						// HLFET
-
+						singleSearch = new HLFETResearch(inputValues);			
 						// DLS
 
 						ArrayList<OffloadScheduling> offloads = (ArrayList<OffloadScheduling>) singleSearch.findScheduling();
