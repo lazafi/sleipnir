@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
  * basic steps for scheduling
  *
  * (1) Calculate the bLevel of each computation-task and store in a sorted list
+ * (2) Select the root nodes for scheduling
  * Repeat
  * (3) Calculate DL = bLevel - Est on every computation-node
  * (4) Select the task-computation-node pair with the largest DL and schedule it on the computation-node
@@ -84,7 +85,11 @@ public class DLSResearch extends OffloadScheduler {
 		double dlMax = 0.0;
 		ComputationalNode target = null;
 
+		// run till all tasks are scheduled
+
 		while(tasks.size() > 0) {
+
+
 			for (MobileSoftwareComponent t: taskPool) {
 				ComputationalNode localDevice = (ComputationalNode) currentInfrastructure.getNodeById(t.getUserId());
 
@@ -95,9 +100,10 @@ public class DLSResearch extends OffloadScheduler {
 				} else {
 					//Check for all available Cloud/Edge nodes
 					double dl;
+					// calculate DL for all task - nodes combinations and select the MAX DL
 					for(ComputationalNode cn : currentInfrastructure.getAllNodes()) {
 						dl = t.getRank() - cn.getESTforTask(t);
-						if ((dl == Double.POSITIVE_INFINITY || dl > dlMax) && isValid(scheduling, t, cn)) {
+						if (( dl > dlMax) && isValid(scheduling, t, cn)) {
 							dlMax = dl;
 							target = cn;
 						}
