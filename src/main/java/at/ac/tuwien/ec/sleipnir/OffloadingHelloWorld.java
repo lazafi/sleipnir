@@ -16,6 +16,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 
+import at.ac.tuwien.ec.scheduling.offloading.algorithms.dls.DLSResearch;
+import at.ac.tuwien.ec.scheduling.offloading.algorithms.dls.DLSResearch_EdgeOnly;
+import at.ac.tuwien.ec.scheduling.offloading.algorithms.dls.DLSResearch_EndDeviceOnly;
 import at.ac.tuwien.ec.scheduling.offloading.algorithms.etf.ETFResearch;
 import at.ac.tuwien.ec.scheduling.offloading.algorithms.etf.ETFResearch_EdgeOnly;
 import at.ac.tuwien.ec.scheduling.offloading.algorithms.etf.ETFResearch_EndDeviceOnly;
@@ -215,13 +218,18 @@ public class OffloadingHelloWorld {
 						//singleSearch = new HEFTResearch(inputValues);
 
 						// ETF
-						singleSearch = new ETFResearch(inputValues);
+						//singleSearch = new ETFResearch(inputValues);
 						//singleSearch = new ETFResearch_EndDeviceOnly(inputValues);
 						//singleSearch = new ETFResearch_EdgeOnly(inputValues);
 
 						// HLFET
 
 						// DLS
+						singleSearch = new DLSResearch(inputValues);
+						//singleSearch = new DLSResearch_EndDeviceOnly(inputValues);
+						//singleSearch = new DLSResearch_EdgeOnly(inputValues);
+
+
 
 						ArrayList<OffloadScheduling> offloads = (ArrayList<OffloadScheduling>) singleSearch.findScheduling();
 						if(offloads != null)
