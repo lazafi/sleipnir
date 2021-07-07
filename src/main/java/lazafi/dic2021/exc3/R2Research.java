@@ -13,28 +13,24 @@ import at.ac.tuwien.ec.scheduling.utils.RuntimeComparator;
 import at.ac.tuwien.ec.sleipnir.OffloadingSetup;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import scala.Tuple2;
+import scala.collection.Set;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.stream.Collectors;
 
 /**
- * OffloadScheduler class that implements the
- * Heterogeneous Earliest-Finish-Time (HEFT) algorithm
- * , a static scheduling heuristic, for efficient application scheduling
+*  Offload Scheduler implementing DLS Algorithm
+ * basic steps for scheduling
  *
- * H. Topcuoglu, S. Hariri and Min-You Wu,
- * "Performance-effective and low-complexity task scheduling for heterogeneous computing,"
- * in IEEE Transactions on Parallel and Distributed Systems, vol. 13, no. 3, pp. 260-274, March 2002, doi: 10.1109/71.993206.
+ * (1) Calculate the bLevel of each computation-task and store in a sorted list
+ * Repeat
+ * (3) Calculate DL = bLevel - Est on every computation-node
+ * (4) Select the task-computation-node pair with the largest DL and schedule it on the computation-node
  */
 
 public class R2Research extends OffloadScheduler {
-    /**
-     *
-     * @param A MobileApplication property from  SimIteration
-     * @param I MobileCloudInfrastructure property from  SimIteration
-     * Constructors set the parameters and calls setRank() to nodes' ranks
-     */
 
 	public R2Research(MobileApplication A, MobileCloudInfrastructure I) {
 		super();
@@ -51,25 +47,31 @@ public class R2Research extends OffloadScheduler {
 	}
 
     /**
-     * Processor selection phase:
-     * select the tasks in order of their priorities and schedule them on its "best" processor,
-     * which minimizes task's finish time
+	 * scheduling is implemented here
      * @return
      */
 	@Override
 	public ArrayList<? extends OffloadScheduling> findScheduling() {
 		double start = System.nanoTime();
+
 		/*scheduledNodes contains the nodes that have been scheduled for execution.
 		 * Once nodes are scheduled, they are taken from the PriorityQueue according to their runtime
 		 */
-		PriorityQueue<MobileSoftwareComponent> scheduledNodes
-		= new PriorityQueue<MobileSoftwareComponent>(new RuntimeComparator());
+		PriorityQueue<MobileSoftwareComponent> scheduledNodes = new PriorityQueue<MobileSoftwareComponent>(new RuntimeComparator());
+
 		/*
 		 * tasks contains tasks that have to be scheduled for execution.
 		 * Tasks are selected according to their upRank (at least in HEFT)
 		 */
 		PriorityQueue<MobileSoftwareComponent> tasks = new PriorityQueue<MobileSoftwareComponent>(new NodeRankComparator());
-		//To start, we add all nodes in the workflow
+
+		// root nodes
+		List<MobileSoftwareComponent> taskPool = currentApp.getTaskDependencies().vertexSet().stream()
+				.filter(vert -> currentApp.getTaskDependencies().incomingEdgesOf(vert).size() == 0)
+				.collect(Collectors.toList());
+
+
+
 		tasks.addAll(currentApp.getTaskDependencies().vertexSet());
 		ArrayList<OffloadScheduling> deployments = new ArrayList<OffloadScheduling>();
 				
@@ -78,53 +80,61 @@ public class R2Research extends OffloadScheduler {
 		OffloadScheduling scheduling = new OffloadScheduling();
 		//We check until there are nodes available for scheduling
 
-		while((currTask = tasks.peek()) != null)
-		{
-			double dlMax = 0.0;
-			ComputationalNode target = null;
-			
-			/*while(!currentApp.getIncomingEdgesIn(currTask).isEmpty() && !scheduledNodes.isEmpty())
-			{
-				MobileSoftwareComponent terminated = scheduledNodes.remove();
-				((ComputationalNode) scheduling.get(terminated)).undeploy(terminated);
-				this.currentApp.removeTask(terminated);
-			}*/			
-			if(!currTask.isOffloadable())  {
-			    // If task is not offloadable, deploy it in the mobile device (if enough resources are available)
-                if(isValid(scheduling,currTask,(ComputationalNode) currentInfrastructure.getNodeById(currTask.getUserId())))
-                	target = (ComputationalNode) currentInfrastructure.getNodeById(currTask.getUserId()); 
-				
-			} else {
-				//Check for all available Cloud/Edge nodes
-				for(ComputationalNode cn : currentInfrastructure.getAllNodes()) {
+		double dlMax = 0.0;
+		ComputationalNode target = null;
 
-					double dl = currTask.getRank() - cn.getESTforTask(currTask);
-
-
-					if ((dl == Double.POSITIVE_INFINITY || dl > dlMax) && isValid(scheduling, currTask, cn)) {
-						dlMax = dl;
-						target = cn;
-						//System.out.println("dl:" + dl + " " + currTask.getRank() + " - " + cn.getESTforTask(currTask) + " " + currTask.toString());
+		while(tasks.size() > 0) {
+			System.out.println(tasks.size());
+			for (MobileSoftwareComponent t: taskPool) {
+				if(!t.isOffloadable())  {
+					// If task is not offloadable, deploy it in the mobile device (if enough resources are available)
+					if(isValid(scheduling,t,(ComputationalNode) currentInfrastructure.getNodeById(t.getUserId())))
+						target = (ComputationalNode) currentInfrastructure.getNodeById(t.getUserId());
+				} else {
+					//Check for all available Cloud/Edge nodes
+					for(ComputationalNode cn : currentInfrastructure.getAllNodes()) {
+						double dl = t.getRank() - cn.getESTforTask(t);
+						if ((dl == Double.POSITIVE_INFINITY || dl > dlMax) && isValid(scheduling, t, cn)) {
+							dlMax = dl;
+							target = cn;
+							//System.out.println("dl:" + dl + " " + currTask.getRank() + " - " + cn.getESTforTask(currTask) + " " + currTask.toString());
+						}
 					}
 				}
+				if(target != null)
+				{
+					deploy(scheduling,t,target);
+					scheduledNodes.add(t);
+					tasks.remove(t);
+				}
+				else if(!scheduledNodes.isEmpty());
+				{
+					MobileSoftwareComponent terminated = scheduledNodes.remove();
+					((ComputationalNode) scheduling.get(terminated)).undeploy(terminated);
+				}
+				/*
+				 * if simulation considers mobility, perform post-scheduling operations
+				 * (default is to update coordinates of mobile devices)
+				 */
+				if(OffloadingSetup.mobility)
+					postTaskScheduling(scheduling);
+
 			}
-			if(target != null)
-			{
-				deploy(scheduling,currTask,target);
-				scheduledNodes.add(currTask);
-				tasks.remove(currTask);
+			// next nodes
+			//taskPool = currentApp.getTaskDependencies().vertexSet().stream()
+			//		.flatMap(vert -> currentApp.getTaskDependencies().outgoingEdgesOf(vert))
+			//		.collect(Collectors.toList());
+
+			ArrayList<MobileSoftwareComponent> newTaskPool = new ArrayList<>();
+			for (MobileSoftwareComponent c : taskPool) {
+				java.util.Set<ComponentLink> out =  currentApp.getTaskDependencies().outgoingEdgesOf(c);
+				for (ComponentLink cl : out) {
+					newTaskPool.add(cl.getTarget());
+				}
 			}
-			else if(!scheduledNodes.isEmpty());
-			{
-				MobileSoftwareComponent terminated = scheduledNodes.remove();
-				((ComputationalNode) scheduling.get(terminated)).undeploy(terminated);
-			}
-			/*
-			 * if simulation considers mobility, perform post-scheduling operations
-			 * (default is to update coordinates of mobile devices)
-			 */
-			if(OffloadingSetup.mobility)
-				postTaskScheduling(scheduling);					
+			System.out.println("n" + newTaskPool.size());
+			taskPool = newTaskPool;
+
 		}
 		double end = System.nanoTime();
 		scheduling.setExecutionTime(end-start);
