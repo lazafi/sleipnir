@@ -16,9 +16,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 
-import lazafi.dic2021.exc3.R1Research;
-import lazafi.dic2021.exc3.R2Research;
-import lazafi.dic2021.exc3.RandomOffloadScheduler;
+import at.ac.tuwien.ec.scheduling.offloading.algorithms.etf.ETFResearch;
+import at.ac.tuwien.ec.scheduling.offloading.algorithms.etf.ETFResearch_EdgeOnly;
+import at.ac.tuwien.ec.scheduling.offloading.algorithms.etf.ETFResearch_EndDeviceOnly;
 import org.apache.commons.lang.math.RandomUtils;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -93,8 +93,8 @@ public class OffloadingHelloWorld {
 		Logger.getLogger("org").setLevel(Level.OFF);
 		Logger.getLogger("akka").setLevel(Level.OFF);
 		
-		/* Class used to compare deployments according to frequency, i.e., the number of times they appear in the histogram
-		 * 
+		/*
+		 * Class used to compare deployments according to frequency, i.e., the number of times they appear in the histogram
 		 */
 		class FrequencyComparator implements Serializable,
 			Comparator<Tuple2<OffloadScheduling, Tuple5<Integer, Double, Double, Double, Double>>>
@@ -135,38 +135,38 @@ public class OffloadingHelloWorld {
 		
 		JavaPairRDD<OffloadScheduling, Tuple5<Integer, Double, Double, Double, Double>> histogram = runSparkSimulation(
 				jscontext, inputSamples, OffloadingSetup.algoName);
-			if(!outFile.exists())
+		if(!outFile.exists())
+		{
+			outFile.getParentFile().mkdirs();
+			try
 			{
-				outFile.getParentFile().mkdirs();
-				try 
-				{
-					outFile.createNewFile();
-					writer  = new PrintWriter(outFile,"UTF-8");
-					writer.println(MontecarloStatisticsPrinter.getHeader());
-					writer.println("Algorithm: " + OffloadingSetup.algoName);
-					//By default, we select the deployment with the highest frequency
-					Tuple2<OffloadScheduling, Tuple5<Integer, Double, Double, Double, Double>> mostFrequent = histogram.max(new FrequencyComparator());
-					/* By default, schedulings are saved in the file as a single string, where each value is separated by \t.
-					 * values are:
-					 * 1) the description of the scheduling, with t -> n indicating that task t has been scheduled to node n;
-					 * 2) the frequency of the deployment, meaning the number of times where the deployment occurs in the histrogram;
-					 * 3) the deployment runtime
-					 * 4) the user cost of the deployment
-					 * 5) the battery lifetime of the deployment
-					 * 6) the execution time of the algorithm
-					 */
-					writer.println(mostFrequent._1().toString() + "\t" + mostFrequent._2()._1() + "\t" + mostFrequent._2()._2() 
-						+ "\t" + mostFrequent._2()._3() + "\t" + mostFrequent._2()._4() + "\t" + mostFrequent._2()._5() );
-					writer.flush();	
-					writer.close();
-				} 
-				catch (IOException e) 
-				{
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				outFile.createNewFile();
+				writer  = new PrintWriter(outFile,"UTF-8");
+				writer.println(MontecarloStatisticsPrinter.getHeader());
+				writer.println("Algorithm: " + OffloadingSetup.algoName);
+				//By default, we select the deployment with the highest frequency
+				Tuple2<OffloadScheduling, Tuple5<Integer, Double, Double, Double, Double>> mostFrequent = histogram.max(new FrequencyComparator());
+				/* By default, schedulings are saved in the file as a single string, where each value is separated by \t.
+				 * values are:
+				 * 1) the description of the scheduling, with t -> n indicating that task t has been scheduled to node n;
+				 * 2) the frequency of the deployment, meaning the number of times where the deployment occurs in the histrogram;
+				 * 3) the deployment runtime
+				 * 4) the user cost of the deployment
+				 * 5) the battery lifetime of the deployment
+				 * 6) the execution time of the algorithm
+				 */
+				writer.println(mostFrequent._1().toString() + "\t" + mostFrequent._2()._1() + "\t" + mostFrequent._2()._2()
+					+ "\t" + mostFrequent._2()._3() + "\t" + mostFrequent._2()._4() + "\t" + mostFrequent._2()._5() );
+				writer.flush();
+				writer.close();
 			}
-			//We print the fist deployment appearing in the histogram
+			catch (IOException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		//We print the fist deployment appearing in the histogram
 		System.out.println(histogram.first());
 		jscontext.close();
 	}
@@ -202,15 +202,26 @@ public class OffloadingHelloWorld {
 					private static final long serialVersionUID = 1L;
 
 					@Override
-					public Iterator<Tuple2<OffloadScheduling, Tuple5<Integer,Double,Double,Double,Double>>> call(Tuple2<MobileApplication, MobileCloudInfrastructure> inputValues)
+					public Iterator<Tuple2<OffloadScheduling, Tuple5<Integer,Double,Double,Double,Double>>>
+							call(Tuple2<MobileApplication, MobileCloudInfrastructure> inputValues)
 							throws Exception {
 						ArrayList<Tuple2<OffloadScheduling,Tuple5<Integer,Double,Double,Double,Double>>> output = 
 								new ArrayList<Tuple2<OffloadScheduling,Tuple5<Integer,Double,Double,Double,Double>>>();
 						OffloadScheduler singleSearch;
-						
+
+						// UNCOMMENT THE NECESSARY LINE to switch between the algorithms
+
+						// HEFT
 						//singleSearch = new HEFTResearch(inputValues);
-						//singleSearch = new RandomOffloadScheduler(inputValues);
-						singleSearch = new R2Research(inputValues);
+
+						// ETF
+						singleSearch = new ETFResearch(inputValues);
+						//singleSearch = new ETFResearch_EndDeviceOnly(inputValues);
+						//singleSearch = new ETFResearch_EdgeOnly(inputValues);
+
+						// HLFET
+
+						// DLS
 
 						ArrayList<OffloadScheduling> offloads = (ArrayList<OffloadScheduling>) singleSearch.findScheduling();
 						if(offloads != null)
