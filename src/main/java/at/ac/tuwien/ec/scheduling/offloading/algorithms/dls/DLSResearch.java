@@ -66,12 +66,12 @@ public class DLSResearch extends OffloadScheduler {
 
 
 		// root nodes
+		// we  the root nodes for initial scheduling
 		List<MobileSoftwareComponent> taskPool = currentApp.getTaskDependencies().vertexSet().stream()
 				.filter(vert -> currentApp.getTaskDependencies().incomingEdgesOf(vert).size() == 0)
 				.collect(Collectors.toList());
 
-
-
+		// all tasks
 		tasks.addAll(currentApp.getTaskDependencies().vertexSet());
 		ArrayList<OffloadScheduling> deployments = new ArrayList<OffloadScheduling>();
 				
@@ -80,23 +80,33 @@ public class DLSResearch extends OffloadScheduler {
 		OffloadScheduling scheduling = new OffloadScheduling();
 		//We check until there are nodes available for scheduling
 
+		// init scheduling criteria
 		double dlMax = 0.0;
 		ComputationalNode target = null;
 
 		while(tasks.size() > 0) {
 			for (MobileSoftwareComponent t: taskPool) {
+				ComputationalNode localDevice = (ComputationalNode) currentInfrastructure.getNodeById(t.getUserId());
+
 				if(!t.isOffloadable())  {
 					// If task is not offloadable, deploy it in the mobile device (if enough resources are available)
 					if(isValid(scheduling,t,(ComputationalNode) currentInfrastructure.getNodeById(t.getUserId())))
 						target = (ComputationalNode) currentInfrastructure.getNodeById(t.getUserId());
 				} else {
 					//Check for all available Cloud/Edge nodes
+					double dl;
 					for(ComputationalNode cn : currentInfrastructure.getAllNodes()) {
-						double dl = t.getRank() - cn.getESTforTask(t);
+						dl = t.getRank() - cn.getESTforTask(t);
 						if ((dl == Double.POSITIVE_INFINITY || dl > dlMax) && isValid(scheduling, t, cn)) {
 							dlMax = dl;
 							target = cn;
 						}
+					}
+
+					// i check the local EST as well because it is possible that the task is offloadable
+					// but it is better to compute it locally though
+					if(localDevice.getESTforTask(t) < dlMax && isValid(scheduling,t,localDevice)) {
+						target = localDevice;
 					}
 				}
 				if(target != null)
@@ -110,6 +120,7 @@ public class DLSResearch extends OffloadScheduler {
 					MobileSoftwareComponent terminated = scheduledNodes.remove();
 					((ComputationalNode) scheduling.get(terminated)).undeploy(terminated);
 				}
+
 				/*
 				 * if simulation considers mobility, perform post-scheduling operations
 				 * (default is to update coordinates of mobile devices)
@@ -118,10 +129,7 @@ public class DLSResearch extends OffloadScheduler {
 					postTaskScheduling(scheduling);
 
 			}
-			// next nodes
-			//taskPool = currentApp.getTaskDependencies().vertexSet().stream()
-			//		.flatMap(vert -> currentApp.getTaskDependencies().outgoingEdgesOf(vert))
-			//		.collect(Collectors.toList());
+			// next nodes for scheduling
 
 			ArrayList<MobileSoftwareComponent> newTaskPool = new ArrayList<>();
 			newTaskPool.addAll(tasks);

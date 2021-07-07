@@ -223,11 +223,11 @@ public class OffloadingHelloWorld {
 						//singleSearch = new ETFResearch_EdgeOnly(inputValues);
 
 						// HLFET
-						singleSearch = new HLFETResearch(inputValues);			
+						//singleSearch = new HLFETResearch(inputValues);
 						// DLS
-						singleSearch = new DLSResearch(inputValues);
+						//singleSearch = new DLSResearch(inputValues);
 						//singleSearch = new DLSResearch_EndDeviceOnly(inputValues);
-						//singleSearch = new DLSResearch_EdgeOnly(inputValues);
+						singleSearch = new DLSResearch_EdgeOnly(inputValues);
 
 
 
